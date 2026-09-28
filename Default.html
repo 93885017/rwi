@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Read Write Inc. Phonics Level 1 Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        .nav-link.active {
+            border-bottom: 3px solid #ef4444;
+            color: #ef4444;
+            font-weight: 700;
+        }
+        .letter-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .letter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .letter-btn.active {
+            background-color: #ef4444;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);
+            transform: scale(1.05);
+        }
+        .letter-btn.completed:not(.active) {
+            background-color: #d1fae5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+        .celebration-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(253, 224, 71, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            display: none;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .8; }
+        }
+        .celebration-overlay.show {
+            display: flex;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Tab Content Control */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <header class="bg-white shadow-sm border-b-4 border-red-500 py-4 px-4 sm:px-8 mb-8 sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-500 p-2 rounded-xl text-white shadow-md">
+                        <i class="fa-solid fa-book-open text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight leading-none">
+                            Read Write Inc.
+                        </h1>
+                        <p class="text-xs sm:text-sm font-semibold text-red-500 uppercase tracking-widest mt-1">Level 1 Phonics</p>
+                    </div>
+                </div>
+                
+                <div class="md:hidden bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-full font-bold flex items-center gap-2 text-sm shadow-sm">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span id="mobile-progress-text">0 / 31</span>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex gap-1 sm:gap-4 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+                <button onclick="switchTab('overview')" class="nav-link active px-3 py-2 text-sm sm:text-base text-slate-500 font-semibold hover:text-slate-800 transition-colors whitespace-nowrap" id="tab-overview">
+                    <i class="fa-solid fa-house mr-1"></i> Overview
+                </button>
+                <button onclick="switchTab('daily-lesson')" class="nav-link px-3 py-2 text-sm sm:text-base text-slate-500 font-semibold hover:text-slate-800 transition-colors whitespace-nowrap" id="tab-daily-lesson">
+                    <i class="fa-solid fa-chalkboard-user mr-1"></i> Daily Lessons
+                </button>
+                <button onclick="switchTab('materials')" class="nav-link px-3 py-2 text-sm sm:text-base text-slate-500 font-semibold hover:text-slate-800 transition-colors whitespace-nowrap" id="tab-materials">
+                    <i class="fa-solid fa-folder-open mr-1"></i> Materials
+                </button>
+            </nav>
+
+            <div class="hidden md:flex bg-emerald-100 text-emerald-800 px-4 py-2 rounded-full font-bold items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-circle-check"></i>
+                <span id="desktop-progress-text">0 / 31</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-8">
+        
+        <!-- TAB 1: OVERVIEW -->
+        <div id="content-overview" class="tab-content active space-y-8">
+            <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200">
+                <div class="max-w-3xl">
+                    <h2 class="text-3xl font-extrabold text-slate-800 mb-4">Welcome to RWI Level 1</h2>
+                    <p class="text-lg text-slate-600 mb-6 leading-relaxed">
+                        This tracker is designed to help parents and teachers guide children through the foundational stages of reading using the <strong>Read Write Inc. (RWI)</strong> phonics programme. Content focuses on <strong>Set 1 Speed Sounds</strong>.
+                    </p>
+                    
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-2xl mb-8">
+                        <h3 class="text-xl font-bold text-blue-900 mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info"></i> The Golden Rule: Pure Sounds
+                        </h3>
+                        <p class="text-blue-800 mb-4">
+                            It is crucial that sounds are pronounced as <strong>"pure sounds"</strong>. This means stretching sounds like 'm' to 'mmmm' instead of saying the letter name 'em', and keeping bouncy sounds short (saying 't' not 'tuh').
+                        </p>
+                        <a href="https://www.oxfordowl.co.uk/for-home/reading-owl/find-a-book/read-write-inc-phonics--1/phonics-pure-sounds-video" target="_blank" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm shadow-sm">
+                            <i class="fa-solid fa-play"></i> Watch Pure Sounds Guide
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-6 border-b pb-4">The Set 1 Sound Sequence</h3>
+                    <p class="text-slate-600 mb-6">
+                        Sounds must be taught in this exact, non-alphabetical order to enable early word blending as quickly as possible.
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="sequence-display">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200">
+                <h3 class="text-2xl font-bold text-slate-800 mb-4">Progression to Reading</h3>
+                <p class="text-slate-600 leading-relaxed mb-4">
+                    Once a child can effortlessly read all Set 1 sounds and blend CVC (consonant-vowel-consonant) words independently using Fred Talk, they are ready for the next step.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 mt-6">
+                    <div class="flex-1 bg-red-50 p-6 rounded-2xl border border-red-100">
+                        <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-book-open-reader"></i>
+                        </div>
+                        <h4 class="font-bold text-lg text-slate-800 mb-2">Sound Blending Books</h4>
+                        <p class="text-sm text-slate-600">Practice blending single words before moving to sentences.</p>
+                    </div>
+                    <div class="flex-1 bg-purple-50 p-6 rounded-2xl border border-purple-100">
+                        <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-book"></i>
+                        </div>
+                        <h4 class="font-bold text-lg text-slate-800 mb-2">Red Ditty Books</h4>
+                        <p class="text-sm text-slate-600">Short, fully decodable passages made up entirely of Set 1 sounds. Read one ditty per day.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: DAILY LESSONS -->
+        <div id="content-daily-lesson" class="tab-content">
+            <div class="flex flex-col lg:flex-row gap-8">
+                
+                <!-- Left Sidebar: Letter Selection -->
+                <div class="w-full lg:w-1/3 flex flex-col gap-6">
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-sm text-blue-800 flex gap-3 shadow-sm">
+                        <i class="fa-solid fa-circle-info mt-0.5 text-blue-600"></i>
+                        <p><strong>Remember:</strong> Teach one new sound a day in this exact order. Review previous sounds daily.</p>
+                    </div>
+
+                    <div id="lesson-navigation" class="space-y-6">
+                        <!-- Groups populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Right Area: Lesson Content -->
+                <div class="w-full lg:w-2/3 flex flex-col gap-6">
+                    
+                    <!-- Hero / Video Banner -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                        
+                        <div id="celebration-screen" class="celebration-overlay rounded-3xl">
+                            <div class="text-center transform scale-110">
+                                <h2 class="text-5xl font-extrabold text-yellow-900 drop-shadow-md flex items-center gap-4 justify-center">
+                                    <i class="fa-solid fa-star text-yellow-500"></i>
+                                    Brilliant! 
+                                    <i class="fa-solid fa-star text-yellow-500"></i>
+                                </h2>
+                                <p class="text-yellow-800 font-bold mt-2 text-xl">Sound Mastered!</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col md:flex-row gap-8 items-center">
+                            <!-- Letter Display & Status -->
+                            <div class="text-center md:w-1/3 flex flex-col items-center">
+                                <h2 class="text-slate-400 font-bold uppercase tracking-widest mb-2 text-sm">Today's Sound</h2>
+                                <div id="display-letter" class="text-8xl sm:text-9xl font-black text-slate-800 leading-none mb-6 drop-shadow-sm">
+                                    m
+                                </div>
+                                <button
+                                    id="btn-mark-done"
+                                    onclick="toggleMarkDone()"
+                                    class="w-full sm:w-auto md:w-full flex justify-center items-center gap-2 px-8 py-3.5 rounded-full font-bold text-lg transition-all bg-red-500 text-white shadow-lg hover:shadow-xl hover:bg-red-600 hover:-translate-y-0.5"
+                                >
+                                    <i class="fa-regular fa-circle" id="icon-mark-done"></i>
+                                    <span id="text-mark-done">Mark as Done</span>
+                                </button>
+                            </div>
+
+                            <!-- Video Player Area -->
+                            <div class="w-full md:w-2/3">
+                                <div class="bg-slate-900 rounded-2xl shadow-inner border-4 border-slate-100 overflow-hidden">
+                                    <div id="video-wrapper" class="video-container bg-black flex items-center justify-center relative">
+                                        <!-- Iframe populated by JS -->
+                                        <div id="no-video-msg" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 hidden">
+                                            <i class="fa-regular fa-circle-play text-5xl mb-3 opacity-30"></i>
+                                            <p class="font-medium">No specific video linked yet.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-center text-slate-400 mt-3 flex items-center justify-center gap-1">
+                                    <i class="fa-brands fa-youtube"></i> Official Read Write Inc. Demonstration
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lesson Plan Steps -->
+                    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200">
+                        <h3 class="font-extrabold text-2xl text-slate-800 mb-8 flex items-center gap-3 border-b pb-4">
+                            <i class="fa-solid fa-list-check text-red-500"></i> Daily Teaching Sequence
+                        </h3>
+                        
+                        <div class="space-y-8">
+                            
+                            <!-- Step 1 & 2 -->
+                            <div class="flex gap-4 sm:gap-6">
+                                <div class="bg-orange-100 text-orange-600 p-3 sm:p-4 rounded-2xl h-fit shadow-sm shrink-0">
+                                    <i class="fa-solid fa-lips-retracting-smile text-xl sm:text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-lg sm:text-xl text-slate-800">Step 1 & 2: Say and Read the Sound</h4>
+                                    <div class="mt-3 space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <p class="text-slate-700">
+                                            <span class="font-bold text-slate-900 bg-orange-200 px-2 py-0.5 rounded text-xs uppercase tracking-wider mr-2">Action</span> 
+                                            <span id="data-action">Press lips together hard and stretch the sound "mmmmmm"</span>
+                                        </p>
+                                        <p class="text-slate-700">
+                                            <span class="font-bold text-slate-900 bg-orange-200 px-2 py-0.5 rounded text-xs uppercase tracking-wider mr-2">MTYT</span> 
+                                            "My Turn, Your Turn". Introduce vocabulary. 
+                                            <br>
+                                            <span class="italic text-slate-600 mt-1 block border-l-2 border-orange-300 pl-3">"Listen: <span id="data-words" class="font-semibold text-slate-800">mouse, mountain, mirror</span>... they all start with <span id="data-letter-inline" class="font-bold">m</span>!"</span>
+                                        </p>
+                                        <p class="text-sm text-slate-500 mt-2">Use picture sound cards. Have the child spot the new sound hidden in a pack of previously learned cards.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3 & 4 -->
+                            <div class="flex gap-4 sm:gap-6">
+                                <div class="bg-purple-100 text-purple-600 p-3 sm:p-4 rounded-2xl h-fit shadow-sm shrink-0">
+                                    <i class="fa-solid fa-pen-nib text-xl sm:text-2xl"></i>
+                                </div>
+                                <div class="w-full">
+                                    <h4 class="font-bold text-lg sm:text-xl text-slate-800">Step 3 & 4: Review and Write</h4>
+                                    <p class="text-slate-600 mt-1 mb-3">Quickly review all previously taught sounds using flashcards.</p>
+                                    
+                                    <div class="bg-purple-50 p-5 rounded-xl border border-purple-100 relative overflow-hidden">
+                                        <div class="absolute -right-4 -bottom-4 opacity-10">
+                                            <i class="fa-solid fa-quote-right text-8xl text-purple-900"></i>
+                                        </div>
+                                        <p class="font-bold text-purple-800 text-xs uppercase tracking-widest mb-2">Formation Phrase</p>
+                                        <p class="text-2xl sm:text-3xl font-bold text-purple-900 leading-tight mb-2">"<span id="data-mnemonic">Down Maisie, mountain, mountain</span>"</p>
+                                    </div>
+                                    <p class="text-slate-600 mt-3 text-sm">
+                                        <strong>Teacher Action:</strong> Draw the mnemonic picture on the board, then write the letter next to it while saying the phrase clearly. Have the child trace it in the air, then on paper.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Step 5 -->
+                            <div class="flex gap-4 sm:gap-6">
+                                <div class="bg-green-100 text-green-600 p-3 sm:p-4 rounded-2xl h-fit shadow-sm shrink-0">
+                                    <i class="fa-solid fa-ear-listen text-xl sm:text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-lg sm:text-xl text-slate-800">Step 5: Speed Write & Fred Talk</h4>
+                                    <p class="text-slate-700 mt-2"><strong>Speed Write:</strong> Have the child write 3 previously learned sounds as quickly as they can from memory.</p>
+                                    
+                                    <div class="mt-4 bg-green-50 p-4 rounded-xl border border-green-100">
+                                        <h5 class="font-bold text-green-900 flex items-center gap-2 mb-2">
+                                            <i class="fa-solid fa-frog text-green-600"></i> Oral Fred Talk
+                                        </h5>
+                                        <p class="text-slate-700 text-sm">
+                                            Fred the Frog can only speak in sounds. Orally blend sounds into words. 
+                                            <br>Teacher says: <em>"<span id="data-fred-sounds">m-a-d</span>"</em> 
+                                            <br>Child blends and says: <em>"<span id="data-fred-word">mad</span>"</em>.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: MATERIALS -->
+        <div id="content-materials" class="tab-content">
+            <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200 mb-8">
+                <div class="flex items-center gap-4 border-b pb-6 mb-6">
+                    <div class="bg-blue-100 text-blue-600 p-4 rounded-2xl">
+                        <i class="fa-solid fa-folder-open text-3xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-800">Teaching Materials</h2>
+                        <p class="text-slate-600 mt-1">Resources for classroom and home learning support.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Cards -->
+                    <div class="border border-slate-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
+                        <h3 class="font-bold text-xl text-slate-800 mb-3 flex items-center gap-2">
+                            <i class="fa-regular fa-images text-indigo-500"></i> Flashcards
+                        </h3>
+                        <p class="text-sm text-slate-600 mb-4">Printable "Picture Sound Cards" (A7 size). Letter on one side, mnemonic picture on the reverse.</p>
+                        <ul class="text-sm text-slate-700 space-y-2 mb-4">
+                            <li><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Set 1 Speed Sounds</li>
+                            <li><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Mnemonic illustrations</li>
+                        </ul>
+                        <button class="text-indigo-600 font-semibold text-sm hover:underline"><i class="fa-solid fa-download mr-1"></i> Download PDF (Mock)</button>
+                    </div>
+
+                    <!-- Worksheets -->
+                    <div class="border border-slate-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
+                        <h3 class="font-bold text-xl text-slate-800 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-file-pen text-orange-500"></i> Practice Sheets
+                        </h3>
+                        <p class="text-sm text-slate-600 mb-4">Handwriting and letter formation worksheets featuring the mnemonic image for tracing.</p>
+                        <ul class="text-sm text-slate-700 space-y-2 mb-4">
+                            <li><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Letter tracing</li>
+                            <li><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Formation rhymes included</li>
+                        </ul>
+                        <button class="text-orange-600 font-semibold text-sm hover:underline"><i class="fa-solid fa-download mr-1"></i> Download PDF (Mock)</button>
+                    </div>
+
+                    <!-- Word Cards -->
+                    <div class="border border-slate-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
+                        <h3 class="font-bold text-xl text-slate-800 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-emerald-500"></i> Word Cards
+                        </h3>
+                        <p class="text-sm text-slate-600 mb-4">Cards for blending practice and sight word recognition.</p>
+                        <div class="flex gap-2 mb-4">
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">Green Words (Decodable)</span>
+                            <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold">Red Words (Tricky)</span>
+                        </div>
+                        <button class="text-emerald-600 font-semibold text-sm hover:underline"><i class="fa-solid fa-download mr-1"></i> Download PDF (Mock)</button>
+                    </div>
+
+                    <!-- Parent Pack -->
+                    <div class="border border-slate-200 rounded-2xl p-6 hover:shadow-md transition-shadow bg-slate-50">
+                        <h3 class="font-bold text-xl text-slate-800 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-house-chimney-user text-rose-500"></i> Parent Support Pack
+                        </h3>
+                        <p class="text-sm text-slate-600 mb-4">Guidance for home learning, pencil grip, posture, and explaining 'Fred Talk' to parents.</p>
+                        <button class="w-full bg-white border border-slate-300 text-slate-700 font-semibold py-2 rounded-lg hover:bg-slate-100 transition-colors shadow-sm">
+                            <i class="fa-solid fa-download mr-1"></i> Get Parent Booklet
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Data Structure
+        const rwiGroups = [
+            { id: 1, title: 'Set 1.1', letters: ['m', 'a', 's', 'd', 't'] },
+            { id: 2, title: 'Set 1.2', letters: ['i', 'n', 'p', 'g', 'o'] },
+            { id: 3, title: 'Set 1.3', letters: ['c', 'k', 'u', 'b'] },
+            { id: 4, title: 'Set 1.4', letters: ['f', 'e', 'l', 'h', 'sh'] },
+            { id: 5, title: 'Set 1.5', letters: ['r', 'j', 'v', 'y', 'w'] },
+            { id: 6, title: 'Set 1.6', letters: ['th', 'z', 'ch', 'qu', 'x', 'ng', 'nk'] }
+        ];
+
+        // Detailed data for Set 1.1 and 1.2 based on real RWI and provided YouTube IDs
+        const rwiData = {
+            // Set 1.1
+            'm': { videoId: 'K04dQGUvj7U', action: 'Press lips together hard and stretch the sound "mmmmmm"', mnemonic: 'Down Maisie, mountain, mountain', words: ['mouse', 'mountain', 'mirror'], fred: {s: 'm-a-d', w: 'mad'} },
+            'a': { videoId: '_f5BPXyA6Sw', action: 'Open mouth wide as if taking a bite of an apple "a-a-a-a-a"', mnemonic: 'Round the apple, down the leaf', words: ['apple', 'ant', 'alligator'], fred: {s: 's-a-d', w: 'sad'} },
+            's': { videoId: 'PREAsQKT5mo', action: 'Keep teeth together and hiss "ssssss" (unvoiced)', mnemonic: 'Slither down the snake', words: ['snake', 'sun', 'spider'], fred: {s: 's-i-t', w: 'sit'} },
+            'd': { videoId: 'ZF4U_2nG_28', action: 'Tap tongue behind the teeth "d-d-d-d"', mnemonic: 'Round his bottom, up his tall neck, down to his feet', words: ['dinosaur', 'dog', 'door'], fred: {s: 'd-o-g', w: 'dog'} },
+            't': { videoId: 'eQJ5s2RZfCo', action: 'Tick tongue behind the teeth "t-t-t-t" (unvoiced)', mnemonic: 'Down the tower, across the tower', words: ['tower', 'tiger', 'tent'], fred: {s: 't-o-p', w: 'top'} },
+            
+            // Set 1.2
+            'i': { videoId: 'rjd883m9hqk', action: 'Make a sharp sound at the back of the throat - smile "i-i-i"', mnemonic: 'Down the insect\'s body, dot for the head', words: ['insect', 'ink', 'igloo'], fred: {s: 'i-n', w: 'in'} },
+            'n': { videoId: 'gALHXD04H4c', action: 'Keep tongue behind teeth and stretch "nnnnnn"', mnemonic: 'Down Nobby and over the net', words: ['net', 'nut', 'nest'], fred: {s: 'p-i-n', w: 'pin'} },
+            'p': { videoId: 'xXs22-rHOmg', action: 'Make distinctive short p with lips "p-p-p" (unvoiced)', mnemonic: 'Down the plait, up and over the pirate\'s face', words: ['pirate', 'pan', 'pig'], fred: {s: 'p-a-t', w: 'pat'} },
+            'g': { videoId: '31ioHNiSVXo', action: 'Make short soft sound in throat "g-g-g"', mnemonic: 'Round the girl\'s face, down her hair and give her a curl', words: ['girl', 'gate', 'goat'], fred: {s: 'p-i-g', w: 'pig'} },
+            'o': { videoId: 'cMDgN3cIeFg', action: 'Push out lips, make mouth into o shape "o-o-o"', mnemonic: 'All around the orange', words: ['orange', 'octopus', 'on'], fred: {s: 'd-o-g', w: 'dog'} },
+            
+            // Set 1.3
+            'c': { videoId: 'lvtJU3rHKz4', action: 'Make sharp click at back of throat (unvoiced)', mnemonic: 'Curl around the caterpillar', words: ['caterpillar', 'cat', 'car'], fred: {s: 'c-a-t', w: 'cat'} },
+            'k': { videoId: 'v8EOVwGsBPk', action: 'Make sharp click at back of throat (unvoiced)', mnemonic: 'Down the kangaroo\'s body, tail and leg', words: ['kangaroo', 'kite', 'key'], fred: {s: 'k-i-d', w: 'kid'} },
+            'u': { videoId: 'KZYuz_lqTvM', action: 'Make a short sound in the throat "u-u-u"', mnemonic: 'Down and under the umbrella, up to the top and down to the puddle', words: ['umbrella', 'up', 'under'], fred: {s: 'm-u-g', w: 'mug'} },
+            'b': { videoId: '1WmekBvJ3v4', action: 'Make a short, strong b with lips', mnemonic: 'Down the laces, over the toe and touch the heel', words: ['boot', 'bat', 'ball'], fred: {s: 'b-e-d', w: 'bed'} },
+
+            // Set 1.4
+            'f': { videoId: 'IzkUulEkLsA', action: 'Keep teeth on bottom lip and force air out sharply (unvoiced)', mnemonic: 'Down the stem and draw the leaves', words: ['flower', 'fish', 'frog'], fred: {s: 'f-a-n', w: 'fan'} },
+            'e': { videoId: '', action: 'Release mouth slightly from a position "e-e-e"', mnemonic: 'Chop off the egg and scoop out the inside', words: ['egg', 'elephant', 'envelope'], fred: {s: 'r-e-d', w: 'red'} },
+            'l': { videoId: '9vSjDP6vP1A', action: 'Keep pointed curled tongue behind teeth "llllll"', mnemonic: 'Down the long leg', words: ['leg', 'log', 'lamp'], fred: {s: 'l-i-p', w: 'lip'} }
+        };
+
+        // State
+        let currentLetter = 'm';
+        let completedLetters = new Set();
+        const totalLetters = 31; // Total in Set 1
+
+        // DOM Elements
+        const sequenceDisplay = document.getElementById('sequence-display');
+        const lessonNavigation = document.getElementById('lesson-navigation');
+        const displayLetter = document.getElementById('display-letter');
+        const btnMarkDone = document.getElementById('btn-mark-done');
+        const iconMarkDone = document.getElementById('icon-mark-done');
+        const textMarkDone = document.getElementById('text-mark-done');
+        const desktopProgress = document.getElementById('desktop-progress-text');
+        const mobileProgress = document.getElementById('mobile-progress-text');
+        const videoWrapper = document.getElementById('video-wrapper');
+        const noVideoMsg = document.getElementById('no-video-msg');
+        const celebrationScreen = document.getElementById('celebration-screen');
+
+        // Data Display Elements
+        const dataAction = document.getElementById('data-action');
+        const dataMnemonic = document.getElementById('data-mnemonic');
+        const dataWords = document.getElementById('data-words');
+        const dataLetterInline = document.getElementById('data-letter-inline');
+        const dataFredSounds = document.getElementById('data-fred-sounds');
+        const dataFredWord = document.getElementById('data-fred-word');
+
+        // Initialization
+        function init() {
+            renderOverviewSequence();
+            renderLessonNavigation();
+            loadLetterData(currentLetter);
+            updateProgress();
+        }
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Deactivate all links
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            
+            // Show selected content
+            document.getElementById(`content-${tabId}`).classList.add('active');
+            // Activate selected link
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            window.scrollTo(0, 0);
+        }
+
+        function renderOverviewSequence() {
+            sequenceDisplay.innerHTML = '';
+            rwiGroups.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'bg-slate-50 rounded-2xl p-4 border border-slate-200';
+                
+                const title = document.createElement('h4');
+                title.className = 'font-bold text-slate-500 mb-3 uppercase tracking-wider text-xs';
+                title.textContent = group.title;
+                groupDiv.appendChild(title);
+
+                const lettersDiv = document.createElement('div');
+                lettersDiv.className = 'flex flex-wrap gap-2';
+                
+                group.letters.forEach(letter => {
+                    const lDiv = document.createElement('div');
+                    lDiv.className = 'w-10 h-10 bg-white rounded-lg border border-slate-200 flex items-center justify-center font-bold text-lg text-slate-700 shadow-sm';
+                    lDiv.textContent = letter;
+                    // Add checkmark if completed (will be updated dynamically later if needed on this tab)
+                    if(completedLetters.has(letter)) {
+                        lDiv.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+                        lDiv.innerHTML = `${letter} <div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full"></div>`; // Simple indicator
+                    }
+                    lettersDiv.appendChild(lDiv);
+                });
+                
+                groupDiv.appendChild(lettersDiv);
+                sequenceDisplay.appendChild(groupDiv);
+            });
+        }
+
+        function renderLessonNavigation() {
+            lessonNavigation.innerHTML = '';
+            rwiGroups.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200';
+                
+                const title = document.createElement('h2');
+                title.className = 'font-bold text-slate-400 mb-3 uppercase tracking-wider text-xs sm:text-sm';
+                title.textContent = group.title;
+                groupDiv.appendChild(title);
+
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-5 gap-2';
+                
+                group.letters.forEach(letter => {
+                    const btn = document.createElement('button');
+                    const isDone = completedLetters.has(letter);
+                    const isActive = letter === currentLetter;
+                    
+                    btn.className = `letter-btn relative py-2 sm:py-3 rounded-xl font-bold text-base sm:text-lg border w-full
+                        ${isActive ? 'active border-red-500' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}
+                        ${isDone && !isActive ? 'completed' : ''}`;
+                    
+                    btn.textContent = letter;
+                    btn.onclick = () => selectLetter(letter);
+                    
+                    if (isDone) {
+                        const check = document.createElement('div');
+                        check.className = 'absolute -top-1.5 -right-1.5 bg-white rounded-full text-emerald-500 shadow-sm leading-none';
+                        check.innerHTML = '<i class="fa-solid fa-circle-check text-sm"></i>';
+                        btn.appendChild(check);
+                    }
+                    
+                    grid.appendChild(btn);
+                });
+                
+                groupDiv.appendChild(grid);
+                lessonNavigation.appendChild(groupDiv);
+            });
+        }
+
+        function selectLetter(letter) {
+            currentLetter = letter;
+            renderLessonNavigation(); // Re-render to update active state
+            loadLetterData(letter);
+            
+            // Scroll to top of right panel on mobile
+            if (window.innerWidth < 1024) {
+                document.getElementById('display-letter').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function loadLetterData(letter) {
+            // Default fallback data if not defined
+            const data = rwiData[letter] || { 
+                videoId: '', 
+                action: 'Pure sound practice (Stretch or bounce).', 
+                mnemonic: 'Practice writing the letter.',
+                words: ['word1', 'word2', 'word3'],
+                fred: {s: 's-o-u-n-d', w: 'sound'}
+            };
+
+            // Update UI elements
+            displayLetter.textContent = letter;
+            dataLetterInline.textContent = letter;
+            dataAction.textContent = data.action;
+            dataMnemonic.textContent = data.mnemonic;
+            dataWords.textContent = data.words.join(', ');
+            dataFredSounds.textContent = data.fred.s;
+            dataFredWord.textContent = data.fred.w;
+
+            // Handle Video
+            videoWrapper.innerHTML = '';
+            if (data.videoId) {
+                const iframe = document.createElement('iframe');
+                iframe.src = `https://www.youtube.com/embed/${data.videoId}`;
+                iframe.title = `RWI Set 1: ${letter}`;
+                iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+                iframe.allowFullscreen = true;
+                videoWrapper.appendChild(iframe);
+                noVideoMsg.classList.add('hidden');
+            } else {
+                noVideoMsg.classList.remove('hidden');
+                videoWrapper.appendChild(noVideoMsg);
+            }
+
+            updateMarkDoneButton();
+        }
+
+        function toggleMarkDone() {
+            if (completedLetters.has(currentLetter)) {
+                completedLetters.delete(currentLetter);
+            } else {
+                completedLetters.add(currentLetter);
+                triggerCelebration();
+            }
+            updateMarkDoneButton();
+            renderLessonNavigation();
+            updateProgress();
+        }
+
+        function updateMarkDoneButton() {
+            const isDone = completedLetters.has(currentLetter);
+            if (isDone) {
+                btnMarkDone.className = 'w-full sm:w-auto md:w-full flex justify-center items-center gap-2 px-8 py-3.5 rounded-full font-bold text-lg transition-all bg-emerald-100 text-emerald-800 border-2 border-emerald-200 hover:bg-emerald-200';
+                iconMarkDone.className = 'fa-solid fa-circle-check text-xl';
+                textMarkDone.textContent = 'Completed';
+            } else {
+                btnMarkDone.className = 'w-full sm:w-auto md:w-full flex justify-center items-center gap-2 px-8 py-3.5 rounded-full font-bold text-lg transition-all bg-red-500 text-white shadow-lg hover:shadow-xl hover:bg-red-600 transform hover:-translate-y-0.5 border-2 border-red-500';
+                iconMarkDone.className = 'fa-regular fa-circle text-xl';
+                textMarkDone.textContent = 'Mark as Done';
+            }
+        }
+
+        function updateProgress() {
+            const text = `${completedLetters.size} / ${totalLetters}`;
+            desktopProgress.textContent = text;
+            mobileProgress.textContent = text;
+        }
+
+        function triggerCelebration() {
+            celebrationScreen.classList.add('show');
+            setTimeout(() => {
+                celebrationScreen.classList.remove('show');
+            }, 1800);
+        }
+
+        // Start App
+        window.onload = init;
+
+    </script>
+</body>
+</html>
